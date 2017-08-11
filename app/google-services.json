@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "479401905580",
+    "firebase_url": "https://weatherlogger-e678a.firebaseio.com",
+    "project_id": "weatherlogger-e678a",
+    "storage_bucket": "weatherlogger-e678a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:479401905580:android:406449af527841bb",
+        "android_client_info": {
+          "package_name": "com.github.nekdenis.weatherlogger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "479401905580-3a6ke89m4n13bs7f0m9m85r9hvne784s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByg_1wDXaUMpr-s1bjJ7fRUfzjFqFMOIQ"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

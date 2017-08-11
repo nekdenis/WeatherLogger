@@ -1,0 +1,4 @@
+include ':app', ':broker', ':netty_parser', ':parser_commons'
+project(':broker').projectDir = new File('moquette/broker/')
+project(':netty_parser').projectDir = new File('moquette/netty_parser/')
+project(':parser_commons').projectDir = new File('moquette/parser_commons/')

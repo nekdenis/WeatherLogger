@@ -1,0 +1,3 @@
+[submodule "moquette"]
+	path = moquette
+	url = https://github.com/nekdenis/moquette

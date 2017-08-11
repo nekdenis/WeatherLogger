@@ -1,0 +1,39 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion appSdkVersion
+    buildToolsVersion appBuildToolsVersion
+
+    defaultConfig {
+        applicationId appId
+        minSdkVersion appMinSdkVersion
+        targetSdkVersion appSdkVersion
+        versionCode appVersionCode
+        versionName appVersionName
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.github.mplacona:arduwrap:v0.21'
+    //noinspection GradleDynamicVersion
+    compileOnly 'com.google.android.things:androidthings:+'
+    compile project(':broker')
+    compile "org.eclipse.paho:org.eclipse.paho.client.mqttv3:${pahoVersion}"
+
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    compile 'com.google.firebase:firebase-core:11.0.4'
+    compile 'com.google.firebase:firebase-database:11.0.4'
+    testCompile 'junit:junit:4.12'
+}
+repositories {
+    maven { url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1' }
+}
+apply plugin: 'com.google.gms.google-services'
