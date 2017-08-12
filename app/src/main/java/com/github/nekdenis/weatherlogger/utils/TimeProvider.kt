@@ -2,6 +2,7 @@ package com.github.nekdenis.weatherlogger.utils
 
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.TimeZone
 
 
 interface TimeProvider {
@@ -14,8 +15,9 @@ interface TimeProvider {
 
 class TimeProviderImpl : TimeProvider {
 
-    private val dayFormat = SimpleDateFormat("yyyy-MM-dd")
-    private val timeFormat = SimpleDateFormat("HH:mm")
+    private val dayFormat = SimpleDateFormat("yyyy-MM-dd").apply { timeZone = timeZone() }
+    private val timeFormat = SimpleDateFormat("HH:mm:ss").apply { timeZone = timeZone() }
+    private fun timeZone() = TimeZone.getTimeZone("GMT+8")
 
     override fun nowMillis(): Long = System.currentTimeMillis()
     override fun nowDayFormatted(): String = dayFormat.format(Date(nowMillis()))

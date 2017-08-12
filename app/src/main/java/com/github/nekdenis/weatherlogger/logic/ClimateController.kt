@@ -1,8 +1,8 @@
 package com.github.nekdenis.weatherlogger.logic
 
-import com.github.nekdenis.weatherlogger.BOUNDARY_TEMPERATURE
 import com.github.nekdenis.weatherlogger.REFRESH_SENSORS_INTERVAL
 import com.github.nekdenis.weatherlogger.TIME_INTERVAL_FOR_AVERAGE_VALUE
+import com.github.nekdenis.weatherlogger.db.DBProvider
 import com.github.nekdenis.weatherlogger.model.WeatherModel
 
 
@@ -19,7 +19,9 @@ interface ClimateControllerCallback {
 }
 
 
-class ClimateControllerImpl : ClimateController {
+class ClimateControllerImpl(
+        val dbProvider: DBProvider
+) : ClimateController {
     private val UNDEFINED = Double.MIN_VALUE
     private val queueSize: Int = (TIME_INTERVAL_FOR_AVERAGE_VALUE / REFRESH_SENSORS_INTERVAL).toInt()
 
@@ -45,7 +47,7 @@ class ClimateControllerImpl : ClimateController {
 
     private fun makeDecision(temp: Double, callback: ClimateControllerCallback) {
         if (temp == UNDEFINED) return
-        if (temp < BOUNDARY_TEMPERATURE) callback.turnOffConditioner()
+        if (temp < dbProvider.pullBoundaryTemperature()) callback.turnOffConditioner()
         else callback.turnOnConditioner()
     }
 

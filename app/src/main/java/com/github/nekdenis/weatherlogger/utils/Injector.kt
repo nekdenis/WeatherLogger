@@ -6,8 +6,14 @@ import com.github.nekdenis.weatherlogger.db.DBProvider
 import com.github.nekdenis.weatherlogger.db.DBProviderImpl
 import com.github.nekdenis.weatherlogger.devices.AirConditioner
 import com.github.nekdenis.weatherlogger.devices.AirConditionerMqtt
+import com.github.nekdenis.weatherlogger.devices.Buttons
+import com.github.nekdenis.weatherlogger.devices.ButtonsImpl
+import com.github.nekdenis.weatherlogger.devices.Display
+import com.github.nekdenis.weatherlogger.devices.DisplayImpl
 import com.github.nekdenis.weatherlogger.logic.ClimateController
 import com.github.nekdenis.weatherlogger.logic.ClimateControllerImpl
+import com.github.nekdenis.weatherlogger.logic.IndicatorController
+import com.github.nekdenis.weatherlogger.logic.IndicatorControllerImpl
 import com.github.nekdenis.weatherlogger.messaging.ClientRunner
 import com.github.nekdenis.weatherlogger.messaging.ClientRunnerAndroidImpl
 import com.github.nekdenis.weatherlogger.messaging.ServerRunner
@@ -23,13 +29,17 @@ import com.github.nekdenis.weatherlogger.sensors.TemperatureProvider
 import com.github.nekdenis.weatherlogger.sensors.TemperatureProviderImpl
 import com.github.nekdenis.weatherlogger.sensors.WeatherRepo
 import com.github.nekdenis.weatherlogger.sensors.WeatherRepoImpl
+import com.google.android.things.pio.PeripheralManagerService
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 
-private val log = LoggerImpl()
 
-fun mainController(): MainController = MainControllerImpl(temperatureLogger(), messageServer(), airConditioner(), climateController(), log())
-fun climateController(): ClimateController = ClimateControllerImpl()
+private val log = LoggerImpl()
+private val dbProvider = DBProviderImpl(firebase(), timeProvider(), log())
+private val peripheralManager = PeripheralManagerService()
+
+fun mainController(): MainController = MainControllerImpl(temperatureLogger(), messageServer(), airConditioner(), climateController(), indicatorController(), buttons(), log())
+fun climateController(): ClimateController = ClimateControllerImpl(dbProvider())
 
 fun temperatureLogger(): WeatherRepo = WeatherRepoImpl(temperatureProvider(), dbProvider(), timeProvider(), log())
 fun temperatureProvider(): TemperatureProvider = TemperatureProviderImpl()
@@ -38,7 +48,7 @@ fun firebase(): DatabaseReference = FirebaseDatabase.getInstance().reference
 fun timeProvider(): TimeProvider = TimeProviderImpl()
 fun log(): Logger = log
 
-fun dbProvider(): DBProvider = DBProviderImpl(firebase(), timeProvider(), log())
+fun dbProvider(): DBProvider = dbProvider
 
 fun messageServer(): MessageServer = MessageServerImpl(mqqtBroker(), serverRunner(), messageHandler())
 fun serverRunner(): ServerRunner = ServerRunnerAndroidImpl()
@@ -52,3 +62,9 @@ fun messageClient(): MessageClient = MessageClientImpl(log())
 fun clientRunner(): ClientRunner = ClientRunnerAndroidImpl(messageClient())
 
 fun airConditioner(): AirConditioner = AirConditionerMqtt(clientRunner())
+
+fun display(): Display = DisplayImpl(log())
+fun indicatorController(): IndicatorController = IndicatorControllerImpl(display(), dbProvider())
+
+fun peripheralManager(): PeripheralManagerService = peripheralManager
+fun buttons(): Buttons = ButtonsImpl(log())

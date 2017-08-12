@@ -10,8 +10,9 @@ import com.github.nekdenis.weatherlogger.utils.TimeProvider
 
 
 interface WeatherRepo {
-    fun setListener(onWeatherUpdate: (weather: WeatherModel) -> Unit)
+    fun addListener(onWeatherUpdate: (WeatherModel) -> Unit)
     fun start()
+    fun forceUpdate()
     fun stop()
 }
 
@@ -27,18 +28,23 @@ class WeatherRepoImpl(
         val timeProvider: TimeProvider,
         val log: Logger
 ) : WeatherRepo {
+    private val handler: Handler = Handler(Looper.getMainLooper())
+    private lateinit var lastRunnable: Runnable
 
-    val handler: Handler = Handler(Looper.getMainLooper())
+    private var weatherUpdateListeners: MutableList<((WeatherModel) -> Unit)> = mutableListOf()
 
-    var weatherUpdateListener: ((weather: WeatherModel) -> Unit)? = null
-
-    override fun setListener(onWeatherUpdate: (weather: WeatherModel) -> Unit) {
-        weatherUpdateListener = onWeatherUpdate
+    override fun addListener(onWeatherUpdate: (WeatherModel) -> Unit) {
+        weatherUpdateListeners.add(onWeatherUpdate)
     }
 
     override fun start() {
         weatherProvider.start()
 
+        startRetriever()
+    }
+
+    override fun forceUpdate() {
+        cancelReadings()
         startRetriever()
     }
 
@@ -56,18 +62,22 @@ class WeatherRepoImpl(
     }
 
     private fun notifyListeners(weather: WeatherModel) {
-        weatherUpdateListener?.invoke(weather)
+        weatherUpdateListeners.forEach { it.invoke(weather) }
     }
-
 
     private fun retrieveData() {
-        handler.postDelayed(this::startRetriever, REFRESH_SENSORS_INTERVAL)
+        lastRunnable = Runnable { startRetriever() }
+        handler.postDelayed(lastRunnable, REFRESH_SENSORS_INTERVAL)
     }
 
+    private fun cancelReadings() {
+        handler.removeCallbacks(lastRunnable)
+    }
 
     override fun stop() {
         weatherProvider.stop()
-        weatherUpdateListener = null
+        weatherUpdateListeners.clear()
+        cancelReadings()
     }
 
 }

@@ -31,6 +31,8 @@ ext {
     pahoVersion = "1.1.0"
     pahoAndroidVersion = "1.1.1"
     firebaseVersion = "11.0.4"
+    arduWrapVersion = "v0.21"
+    driverRainbowHatVersion = "0.4"
 }
 
 allprojects {

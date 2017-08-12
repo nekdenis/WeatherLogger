@@ -2,10 +2,13 @@ package com.github.nekdenis.weatherlogger
 
 import android.content.Context
 import com.github.nekdenis.weatherlogger.devices.AirConditioner
+import com.github.nekdenis.weatherlogger.devices.Buttons
 import com.github.nekdenis.weatherlogger.logic.ClimateController
+import com.github.nekdenis.weatherlogger.logic.IndicatorController
 import com.github.nekdenis.weatherlogger.messaging.server.MessageServer
 import com.github.nekdenis.weatherlogger.sensors.WeatherRepo
 import com.github.nekdenis.weatherlogger.utils.Logger
+import com.github.nekdenis.weatherlogger.utils.dbProvider
 
 
 private val TAG = "MAIN_CONTROLLER::"
@@ -20,6 +23,8 @@ class MainControllerImpl(
         val messageServer: MessageServer,
         val airConditioner: AirConditioner,
         val climateController: ClimateController,
+        val indicatorController: IndicatorController,
+        val buttons: Buttons,
         val log: Logger
 ) : MainController {
 
@@ -28,9 +33,22 @@ class MainControllerImpl(
         airConditioner.init {
             log.d("$TAG airConditioner initialized")
             climateController.setCallback(airConditioner)
-            weatherRepo.setListener(climateController::onNewReading)
+            weatherRepo.addListener(onWeatherUpdate = { climateController.onNewReading(it) })
+            weatherRepo.addListener(onWeatherUpdate = { indicatorController.onNewReading(it) })
+            buttons.setButtonAListener { decreaseBoundaryTemp() }
+            buttons.setButtonBListener { increaseBoundaryTemp() }
             weatherRepo.start()
         }
+    }
+
+    private fun increaseBoundaryTemp() {
+        dbProvider().saveBoundaryTemperature(dbProvider().pullBoundaryTemperature() + 1)
+        weatherRepo.forceUpdate()
+    }
+
+    private fun decreaseBoundaryTemp() {
+        dbProvider().saveBoundaryTemperature(dbProvider().pullBoundaryTemperature() - 1)
+        weatherRepo.forceUpdate()
     }
 
     override fun stop() {

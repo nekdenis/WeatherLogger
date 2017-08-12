@@ -1,6 +1,8 @@
 package com.github.nekdenis.weatherlogger.logic
 
+import com.github.nekdenis.weatherlogger.DEFAULT_BOUNDARY_TEMPERATURE
 import com.github.nekdenis.weatherlogger.REFRESH_SENSORS_INTERVAL
+import com.github.nekdenis.weatherlogger.db.DBProvider
 import com.github.nekdenis.weatherlogger.model.WeatherModel
 import org.junit.Assert
 import org.junit.Before
@@ -10,7 +12,17 @@ class ClimateControllerImplTest {
 
     var conditionerState = -1
 
-    val controller = ClimateControllerImpl()
+    val dbProvider = object : DBProvider {
+        override fun saveTemperatureValue(data: WeatherModel) {
+        }
+
+        override fun saveBoundaryTemperature(temp: Double) {
+        }
+
+        override fun pullBoundaryTemperature(): Double = DEFAULT_BOUNDARY_TEMPERATURE
+
+    }
+    val controller = ClimateControllerImpl(dbProvider)
     val callback = object : ClimateControllerCallback {
         override fun turnOnConditioner() {
             conditionerState = 1
