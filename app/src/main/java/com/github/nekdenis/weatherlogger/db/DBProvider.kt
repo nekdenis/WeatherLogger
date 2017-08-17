@@ -60,6 +60,7 @@ class DBProviderImpl(
     }
 
     override fun saveBoundaryTemperature(temp: Double) {
+        boundaryTemp = temp
         firebase.child(getDBRoot()).child(FB_PATH_CONFIG).child(FB_KEY_BOUNDARY_TEMP).save(temp)
     }
 

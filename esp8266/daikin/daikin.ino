@@ -9,6 +9,8 @@ const int mqtt_port = 1883;
 const char* mqtt_user = "testuser";
 const char* mqtt_pass = "passwd";
 
+const int sleepTimeS = 60*10;
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 long lastMsg = 0;
@@ -47,6 +49,8 @@ void setup_wifi() {
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
+  Serial.print("at ");
+  Serial.println(millis());
 
   WiFi.begin(ssid, password);
 
@@ -61,6 +65,8 @@ void setup_wifi() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+  Serial.print("at ");
+  Serial.println(millis());
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -73,13 +79,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println();
 
   if ((char)payload[0] == '1') {
-    digitalWrite(BUILTIN_LED, LOW);
+//    digitalWrite(BUILTIN_LED, LOW);
     if(value!=1){
       turnOnDaikin();
     }
     value = 1;
   } else {
-    digitalWrite(BUILTIN_LED, HIGH);
+//    digitalWrite(BUILTIN_LED, HIGH);
     if(value!=0){
       turnOffDaikin();
     }
@@ -112,16 +118,21 @@ void reconnect() {
 void setup() {
   daikinir.begin();
   pinMode(BUILTIN_LED, OUTPUT);
+  digitalWrite(BUILTIN_LED, LOW);
   Serial.begin(115200);
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
+  digitalWrite(BUILTIN_LED, HIGH);
 }
 
 void loop() {
-
   if (!client.connected()) {
     reconnect();
+  }else{
+    client.loop();
+    client.publish("kitchen_response", "I'm alive");
+    Serial.println("ESP8266 in sleep mode");
+    ESP.deepSleep(sleepTimeS * 1000000);
   }
-  client.loop();
 }

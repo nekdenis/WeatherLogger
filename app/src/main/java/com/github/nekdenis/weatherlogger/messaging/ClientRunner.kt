@@ -12,9 +12,9 @@ import java.util.concurrent.TimeUnit
 
 interface ClientRunner {
     fun connectClient(serverUrl: String, clientName: String, onConnected: () -> Unit, connectionDelay: Long = 0L)
-    fun subscribeToTopic(messageListener: MessageListener)
+    fun subscribeToTopic(subscriptionTopic: String, messageListener: MessageListener)
     fun publishMessage(publishMessage: String, publishTopic: String)
-    fun stopServer()
+    fun stopClient()
 }
 
 private const val CONNECTED: Int = 10
@@ -59,12 +59,12 @@ class ClientRunnerAndroidImpl(
         }, connectionDelay, TimeUnit.MILLISECONDS)
     }
 
-    override fun subscribeToTopic(messageListener: MessageListener) {
+    override fun subscribeToTopic(subscriptionTopic: String, messageListener: MessageListener) {
         subscriber = messageListener
         threadPool.execute {
-            client.subscribeToTopic(object : MessageListener {
+            client.subscribeToTopic(subscriptionTopic, object : MessageListener {
                 override fun onReceived(topic: String, message: String) {
-                    uiHandler.obtainMessage(ERROR_CONNECTION, MsgPld(topic, message))
+                    uiHandler.obtainMessage(RECEIVED, MsgPld(topic, message)).sendToTarget()
                 }
             })
         }
@@ -76,7 +76,7 @@ class ClientRunnerAndroidImpl(
         }
     }
 
-    override fun stopServer() {
+    override fun stopClient() {
         client.disconnect()
     }
 

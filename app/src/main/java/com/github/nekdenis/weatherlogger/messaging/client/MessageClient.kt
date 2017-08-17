@@ -1,6 +1,9 @@
 package com.github.nekdenis.weatherlogger.messaging.client
 
+import com.github.nekdenis.weatherlogger.MQTT_AIR_CONDITIONER_RESPONSE_TOPIC
 import com.github.nekdenis.weatherlogger.utils.Logger
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
+import org.eclipse.paho.client.mqttv3.MqttCallback
 import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttException
@@ -11,7 +14,7 @@ private const val TAG = "MQTTCLIENT:: "
 
 interface MessageClient {
     fun connect(serverUrl: String, clientName: String, onConnected: () -> Unit, onError: () -> Unit)
-    fun subscribeToTopic(messageListener: MessageListener)
+    fun subscribeToTopic(subscriptionTopic:String, messageListener: MessageListener)
     fun publishMessage(publishMessage: String, publishTopic: String)
     fun disconnect()
 }
@@ -23,7 +26,6 @@ interface MessageListener {
 class MessageClientImpl(val logger: Logger) : MessageClient {
 
     lateinit var mqttAndroidClient: MqttClient
-    var subscriptionTopic: String? = null
 
     var qos = 2
     var persistence = MemoryPersistence()
@@ -40,6 +42,21 @@ class MessageClientImpl(val logger: Logger) : MessageClient {
             connOpts.isCleanSession = true
             logger.d("$TAG Connecting to broker: " + serverUrl)
             mqttAndroidClient.connect(connOpts)
+            mqttAndroidClient.setCallback(object : MqttCallback{
+                override fun messageArrived(topic: String?, message: MqttMessage?) {
+                    logger.e(message = "$TAG messageArrived but not processed by special callback! Received message: $topic : $message")
+                }
+
+                override fun connectionLost(cause: Throwable?) {
+                    logger.e(message = "$TAG connectionLost()")
+                }
+
+                override fun deliveryComplete(token: IMqttDeliveryToken?) {
+                    logger.d(message = "$TAG deliveryComplete()")
+                }
+
+            })
+            mqttAndroidClient.subscribe(MQTT_AIR_CONDITIONER_RESPONSE_TOPIC)
             logger.d("$TAG Connected")
             onConnected()
         } catch (e: MqttException) {
@@ -48,7 +65,7 @@ class MessageClientImpl(val logger: Logger) : MessageClient {
         }
     }
 
-    override fun subscribeToTopic(messageListener: MessageListener) {
+    override fun subscribeToTopic(subscriptionTopic:String, messageListener: MessageListener) {
         try {
             mqttAndroidClient.subscribe(subscriptionTopic, qos) { topic, message ->
                 val messageString = String(message.payload)

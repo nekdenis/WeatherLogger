@@ -3,6 +3,7 @@ package com.github.nekdenis.weatherlogger
 import android.content.Context
 import com.github.nekdenis.weatherlogger.devices.AirConditioner
 import com.github.nekdenis.weatherlogger.devices.Buttons
+import com.github.nekdenis.weatherlogger.devices.Buzzer
 import com.github.nekdenis.weatherlogger.logic.ClimateController
 import com.github.nekdenis.weatherlogger.logic.IndicatorController
 import com.github.nekdenis.weatherlogger.messaging.server.MessageServer
@@ -25,12 +26,13 @@ class MainControllerImpl(
         val climateController: ClimateController,
         val indicatorController: IndicatorController,
         val buttons: Buttons,
+        val buzzer: Buzzer,
         val log: Logger
 ) : MainController {
 
     override fun start(context: Context) {
         messageServer.start()
-        airConditioner.init {
+        airConditioner.init({
             log.d("$TAG airConditioner initialized")
             climateController.setCallback(airConditioner)
             weatherRepo.addListener(onWeatherUpdate = { climateController.onNewReading(it) })
@@ -38,6 +40,17 @@ class MainControllerImpl(
             buttons.setButtonAListener { decreaseBoundaryTemp() }
             buttons.setButtonBListener { increaseBoundaryTemp() }
             weatherRepo.start()
+        }, { conditionerControllerIsAlive ->
+            controllerWatchdogCallback(conditionerControllerIsAlive)
+        })
+    }
+
+    private fun controllerWatchdogCallback(conditionerControllerIsAlive: Boolean) {
+        if (conditionerControllerIsAlive) {
+            buzzer.stopBeeping()
+        } else {
+            log.e(message = "$TAG conditionerControllerIsAlive = $conditionerControllerIsAlive")
+            buzzer.startBeeping()
         }
     }
 
@@ -55,5 +68,7 @@ class MainControllerImpl(
         weatherRepo.stop()
         messageServer.stop()
         climateController.removeCallback()
+        airConditioner.stop()
+        buzzer.stop()
     }
 }

@@ -50,7 +50,7 @@ class WeatherRepoImpl(
 
     private fun startRetriever() {
         val temperature = weatherProvider.temperature()
-        val humidity = 0.0//weatherProvider.humidity()
+        val humidity = weatherProvider.humidity()
         log.d("$TAG t=$temperature, h=$humidity")
         if (temperature != null && humidity != null) {
             WeatherModel(temperature, humidity, timeProvider.nowMillis()).let {

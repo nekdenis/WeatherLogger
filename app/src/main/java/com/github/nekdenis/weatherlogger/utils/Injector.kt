@@ -8,8 +8,12 @@ import com.github.nekdenis.weatherlogger.devices.AirConditioner
 import com.github.nekdenis.weatherlogger.devices.AirConditionerMqtt
 import com.github.nekdenis.weatherlogger.devices.Buttons
 import com.github.nekdenis.weatherlogger.devices.ButtonsImpl
+import com.github.nekdenis.weatherlogger.devices.Buzzer
+import com.github.nekdenis.weatherlogger.devices.BuzzerImpl
 import com.github.nekdenis.weatherlogger.devices.Display
 import com.github.nekdenis.weatherlogger.devices.DisplayImpl
+import com.github.nekdenis.weatherlogger.devices.Leds
+import com.github.nekdenis.weatherlogger.devices.LedsImpl
 import com.github.nekdenis.weatherlogger.logic.ClimateController
 import com.github.nekdenis.weatherlogger.logic.ClimateControllerImpl
 import com.github.nekdenis.weatherlogger.logic.IndicatorController
@@ -35,17 +39,18 @@ import com.google.firebase.database.FirebaseDatabase
 
 
 private val log = LoggerImpl()
+private val time = TimeProviderImpl()
 private val dbProvider = DBProviderImpl(firebase(), timeProvider(), log())
 private val peripheralManager = PeripheralManagerService()
 
-fun mainController(): MainController = MainControllerImpl(temperatureLogger(), messageServer(), airConditioner(), climateController(), indicatorController(), buttons(), log())
+fun mainController(): MainController = MainControllerImpl(temperatureLogger(), messageServer(), airConditioner(), climateController(), indicatorController(), buttons(), buzzer(), log())
 fun climateController(): ClimateController = ClimateControllerImpl(dbProvider())
 
 fun temperatureLogger(): WeatherRepo = WeatherRepoImpl(temperatureProvider(), dbProvider(), timeProvider(), log())
 fun temperatureProvider(): TemperatureProvider = TemperatureProviderImpl()
 
 fun firebase(): DatabaseReference = FirebaseDatabase.getInstance().reference
-fun timeProvider(): TimeProvider = TimeProviderImpl()
+fun timeProvider(): TimeProvider = time
 fun log(): Logger = log
 
 fun dbProvider(): DBProvider = dbProvider
@@ -61,10 +66,12 @@ fun messageHandler(): MessageHandler = object : MessageHandler {
 fun messageClient(): MessageClient = MessageClientImpl(log())
 fun clientRunner(): ClientRunner = ClientRunnerAndroidImpl(messageClient())
 
-fun airConditioner(): AirConditioner = AirConditionerMqtt(clientRunner())
-
-fun display(): Display = DisplayImpl(log())
-fun indicatorController(): IndicatorController = IndicatorControllerImpl(display(), dbProvider())
+fun airConditioner(): AirConditioner = AirConditionerMqtt(clientRunner(), timeProvider())
 
 fun peripheralManager(): PeripheralManagerService = peripheralManager
+fun display(): Display = DisplayImpl(log())
+fun indicatorController(): IndicatorController = IndicatorControllerImpl(display(), leds(), dbProvider(), timeProvider())
 fun buttons(): Buttons = ButtonsImpl(log())
+fun leds(): Leds = LedsImpl()
+fun buzzer(): Buzzer = BuzzerImpl()
+

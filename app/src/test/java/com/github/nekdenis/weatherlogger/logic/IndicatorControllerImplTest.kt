@@ -2,6 +2,7 @@ package com.github.nekdenis.weatherlogger.logic
 
 import com.github.nekdenis.weatherlogger.db.DBProvider
 import com.github.nekdenis.weatherlogger.devices.Display
+import com.github.nekdenis.weatherlogger.devices.Leds
 import com.github.nekdenis.weatherlogger.model.WeatherModel
 import org.junit.Assert
 import org.junit.Test
@@ -12,11 +13,25 @@ class IndicatorControllerImplTest {
     var currentTemp = 45.0
 
     val indicator = IndicatorControllerImpl(object : Display {
+        override fun setBrightness(isNight: Boolean) {
+
+        }
+
         override fun updateDisplay(value: Double) {
             dispVal = value
         }
 
         override fun stop() {
+        }
+
+    }, object : Leds {
+        override fun turnOnRed(enable: Boolean) {
+        }
+
+        override fun turnOnBlue(enable: Boolean) {
+        }
+
+        override fun turnOnGreen(enable: Boolean) {
         }
 
     }, object : DBProvider {
@@ -27,7 +42,7 @@ class IndicatorControllerImplTest {
         }
 
         override fun pullBoundaryTemperature(): Double = currentTemp
-    })
+    }, TimeProviderTestImpl())
 
     @Test
     fun onNewReading() {
