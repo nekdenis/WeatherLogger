@@ -6,8 +6,14 @@ import com.github.nekdenis.weatherlogger.core.rx.CompositeDisposableHolder
 import com.github.nekdenis.weatherlogger.core.system.LCRX
 import com.github.nekdenis.weatherlogger.db.ConditionerConfigRepo
 import com.github.nekdenis.weatherlogger.devices.AirConditioner
+import com.github.nekdenis.weatherlogger.model.CONFIG_MODE_AUTO
+import com.github.nekdenis.weatherlogger.model.CONFIG_MODE_ON
+import com.github.nekdenis.weatherlogger.model.ConditionerConfig
 import com.github.nekdenis.weatherlogger.model.WeatherModel
 import com.github.nekdenis.weatherlogger.sensors.WeatherProvider
+import io.reactivex.Completable
+import io.reactivex.Observable
+import io.reactivex.functions.BiFunction
 
 
 interface ClimateController : LCRX {
@@ -29,21 +35,30 @@ class ClimateControllerImpl(
         get() = if (lastReadings.size == queueSize) mediumTemp(lastReadings) else UNDEFINED
 
     override fun onStart() {
-        conditionerConfigRepo.observeOrDefault()
-                .switchMap { config ->
-                    weatherProvider.observeWeather()
-                            .doOnNext { lastReadings.add(it) }
-                            .doOnNext { makeDecision(mediumTemp, config.boundaryTemp) }
-                }
+        Observable.combineLatest(
+                conditionerConfigRepo.observeOrDefault(),
+                weatherProvider.observeWeather(),
+                BiFunction<ConditionerConfig, WeatherModel, Pair<ConditionerConfig, WeatherModel>>(::Pair))
+                .doOnNext { lastReadings.add(it.second) }
+                .flatMapCompletable { processIncomingValues(it.first) }
                 .subscribe()
                 .bind()
     }
 
-    private fun makeDecision(temp: Double, boundaryTemp: Double) {
-        if (temp == UNDEFINED) return
-        if (temp < boundaryTemp) airConditioner.turnOffConditioner().subscribe().bind()
-        else airConditioner.turnOnConditioner().subscribe().bind()
+    private fun processIncomingValues(config: ConditionerConfig): Completable = when (config.mode) {
+        CONFIG_MODE_AUTO -> makeDecision(mediumTemp, config.boundaryTemp)
+        CONFIG_MODE_ON   -> turnOn()
+        else             -> turnOff()
     }
+
+    private fun makeDecision(temp: Double, boundaryTemp: Double) =
+            if (temp == UNDEFINED) Completable.complete()
+            else if (temp < boundaryTemp) turnOff()
+            else turnOn()
+
+    private fun turnOn() = airConditioner.turnOnConditioner()
+
+    private fun turnOff() = airConditioner.turnOffConditioner()
 
     private fun mediumTemp(temps: Collection<WeatherModel>) = temps.run {
         var sum = 0.0

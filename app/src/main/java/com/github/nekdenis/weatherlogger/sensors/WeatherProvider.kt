@@ -35,6 +35,7 @@ class WeatherProviderImpl(
     private fun retrieveData(): Observable<WeatherModel> =
             messageClient.subscribeToTopic(MQTT_TEMPERATURE_ROOM_TOPIC)
                     .map(this::parseResponse)
+                    .filter { it.temperature != UNKNOWN_TEMPERATURE && it.humidity != UNKNOWN_HUMIDITY }
                     .doOnNext { pingReceived() }
                     .doOnNext { log.d("$TAG t=${it.temperature}, h=${it.humidity}") }
 

@@ -64,9 +64,9 @@ class MainControllerImpl(
         Observable.combineLatest(
                 conditionerConfigRepo.observeOrDefault(),
                 weatherProvider.observeWeather(),
-                BiFunction<ConditionerConfig, WeatherModel, Pair<Double, WeatherModel>> { config, weather -> config.boundaryTemp to weather }
+                BiFunction<ConditionerConfig, WeatherModel, Pair<ConditionerConfig, WeatherModel>> { config, weather -> config to weather }
         )
-                .doOnNext { (boundaryTemp, weather) -> indicatorController.onNewReading(weather, boundaryTemp) }
+                .doOnNext { (config, weather) -> indicatorController.onNewReading(weather, config) }
                 .subscribe().bindToSystem()
     }
 
