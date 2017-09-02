@@ -1,4 +1,4 @@
-package com.github.nekdenis.weatherlogger.utils
+package com.github.nekdenis.weatherlogger.core.system
 
 import android.util.Log
 

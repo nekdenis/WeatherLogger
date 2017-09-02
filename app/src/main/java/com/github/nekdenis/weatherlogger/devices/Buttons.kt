@@ -1,6 +1,6 @@
 package com.github.nekdenis.weatherlogger.devices
 
-import com.github.nekdenis.weatherlogger.utils.Logger
+import com.github.nekdenis.weatherlogger.core.system.Logger
 import com.google.android.things.contrib.driver.button.Button
 import com.google.android.things.contrib.driver.rainbowhat.RainbowHat
 

@@ -1,28 +1,31 @@
 package com.github.nekdenis.weatherlogger.messaging.server
 
-import com.github.nekdenis.weatherlogger.messaging.ServerRunner
+import com.github.nekdenis.weatherlogger.core.rx.CompositeDisposableHolder
+import com.github.nekdenis.weatherlogger.core.system.LCRX
+import io.reactivex.Completable
+import io.reactivex.schedulers.Schedulers
 
 
-interface MessageServer {
-    fun start()
-    fun stop()
-}
+interface MessageServer : LCRX
 
 class MessageServerImpl(
         val mqqtBroker: MqqtBroker,
-        val serverRunner: ServerRunner,
-        val messageHandler: MessageHandler
-) : MessageServer {
+        val disposableHolder: CompositeDisposableHolder
+) : MessageServer, CompositeDisposableHolder by disposableHolder {
 
-    override fun start() {
-        serverRunner.runServer(serverRunner())
+    override fun onStart() {
+        serverCompletable().observeOn(Schedulers.io())
+                .doOnDispose { mqqtBroker.onStop() }
+                .subscribe()
+                .bind()
     }
 
-    override fun stop() {
+    private fun serverCompletable() = Completable.fromCallable {
+        mqqtBroker.onStart()
     }
 
-    private fun serverRunner(): Runnable = Runnable {
-        mqqtBroker.start(messageHandler)
+    override fun onStop() {
+        super.onStop()
     }
 
 }

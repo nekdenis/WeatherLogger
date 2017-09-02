@@ -1,104 +1,78 @@
 package com.github.nekdenis.weatherlogger.messaging.client
 
-import com.github.nekdenis.weatherlogger.MQTT_AIR_CONDITIONER_RESPONSE_TOPIC
-import com.github.nekdenis.weatherlogger.utils.Logger
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
-import org.eclipse.paho.client.mqttv3.MqttCallback
-import org.eclipse.paho.client.mqttv3.MqttClient
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions
-import org.eclipse.paho.client.mqttv3.MqttException
-import org.eclipse.paho.client.mqttv3.MqttMessage
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
+import com.github.nekdenis.weatherlogger.MQTT_RECONNECT_TIMEOUT
+import com.github.nekdenis.weatherlogger.core.rx.CompositeDisposableHolder
+import com.github.nekdenis.weatherlogger.core.system.LCRX
+import io.reactivex.Completable
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
 
-private const val TAG = "MQTTCLIENT:: "
-
-interface MessageClient {
-    fun connect(serverUrl: String, clientName: String, onConnected: () -> Unit, onError: () -> Unit)
-    fun subscribeToTopic(subscriptionTopic:String, messageListener: MessageListener)
-    fun publishMessage(publishMessage: String, publishTopic: String)
-    fun disconnect()
+interface MessageClient : LCRX {
+    fun configClient(serverUrl: String, clientName: String)
+    fun observeConnection(): Observable<Boolean>
+    fun subscribeToTopic(subscriptionTopic: String): Observable<String>
+    fun publishMessage(publishMessage: String, publishTopic: String): Completable
 }
 
-interface MessageListener {
-    fun onReceived(topic: String, message: String)
+private data class ClientMessage(val topic: String, val text: String)
+
+private sealed class ClientEvents {
+    class Connected : ClientEvents()
+    class Disconnected : ClientEvents()
+    class Received(val message: ClientMessage) : ClientEvents()
 }
 
-class MessageClientImpl(val logger: Logger) : MessageClient {
+class MessageClientRxImpl(
+        val client: MqttClient,
+        val compositeDisposableHolder: CompositeDisposableHolder
+) : MessageClient, CompositeDisposableHolder by compositeDisposableHolder {
+    lateinit var serverUrl: String
+    lateinit var clientName: String
 
-    lateinit var mqttAndroidClient: MqttClient
+    private val clientObservable = Observable.create<ClientEvents> { emitter ->
 
-    var qos = 2
-    var persistence = MemoryPersistence()
+        val onConnected = { emitter.onNext(ClientEvents.Connected()) }
+        val onMessage = { topic: String, message: String -> emitter.onNext(ClientEvents.Received(ClientMessage(topic, message))) }
+        val onErrorConnection = { e: Throwable -> emitter.onError(e) }
 
-    override fun connect(
-            serverUrl: String,
-            clientName: String,
-            onConnected: () -> Unit,
-            onError: () -> Unit
-    ) {
-        try {
-            mqttAndroidClient = MqttClient(serverUrl, clientName, persistence)
-            val connOpts = MqttConnectOptions()
-            connOpts.isCleanSession = true
-            logger.d("$TAG Connecting to broker: " + serverUrl)
-            mqttAndroidClient.connect(connOpts)
-            mqttAndroidClient.setCallback(object : MqttCallback{
-                override fun messageArrived(topic: String?, message: MqttMessage?) {
-                    logger.e(message = "$TAG messageArrived but not processed by special callback! Received message: $topic : $message")
-                }
-
-                override fun connectionLost(cause: Throwable?) {
-                    logger.e(message = "$TAG connectionLost()")
-                }
-
-                override fun deliveryComplete(token: IMqttDeliveryToken?) {
-                    logger.d(message = "$TAG deliveryComplete()")
-                }
-
-            })
-            mqttAndroidClient.subscribe(MQTT_AIR_CONDITIONER_RESPONSE_TOPIC)
-            logger.d("$TAG Connected")
-            onConnected()
-        } catch (e: MqttException) {
-            onError()
-            logger.e(e, "$TAG can't connect:  ${e.message}")
+        emitter.setCancellable {
+            client.disconnect()
         }
+        client.connect(serverUrl, clientName, onConnected, onMessage, onErrorConnection)
+    }.share()
+
+    override fun configClient(serverUrl: String, clientName: String) {
+        this.serverUrl = serverUrl
+        this.clientName = clientName
     }
 
-    override fun subscribeToTopic(subscriptionTopic:String, messageListener: MessageListener) {
-        try {
-            mqttAndroidClient.subscribe(subscriptionTopic, qos) { topic, message ->
-                val messageString = String(message.payload)
-                logger.d(message = "$TAG Received message: $topic : $messageString")
-                messageListener.onReceived(topic = topic, message = messageString)
-            }
-        } catch (ex: MqttException) {
-            logger.e(ex, "$TAG Exception whilst subscribing")
-        }
-
+    override fun onStart() {
+        clientObservable
+                .subscribeOn(Schedulers.io())
+                .subscribe()
+                .bind()
     }
 
-    override fun publishMessage(publishMessage: String, publishTopic: String) {
-        try {
-            logger.d("$TAG Publishing message: " + publishMessage)
-            val message = MqttMessage(publishMessage.toByteArray())
-            message.qos = qos
-            mqttAndroidClient.publish(publishTopic, message)
-            logger.d("$TAG Message Published")
-            if (!mqttAndroidClient.isConnected) {
-                logger.e(message = "$TAG not connected while publishing")
-            }
-        } catch (e: MqttException) {
-            logger.e(e, "$TAG Error Publishing:  ${e.message}")
-        }
+    override fun onStop() {
+        super.onStop()
     }
 
-    override fun disconnect() {
-        try {
-            mqttAndroidClient.disconnect()
-            logger.d("$TAG Disconnected")
-        } catch (e: MqttException) {
-            logger.e(e, "$TAG can't disconnect connect:  ${e.message}")
-        }
-    }
+    override fun subscribeToTopic(subscriptionTopic: String): Observable<String>
+            = clientObservable.doOnSubscribe { client.subscribeToTopic(subscriptionTopic) }
+            .filter { it is ClientEvents.Received && it.message.topic == subscriptionTopic }
+            .map { it as ClientEvents.Received }
+            .map { it.message.text }
+            .observeOn(AndroidSchedulers.mainThread())
+
+    override fun publishMessage(publishMessage: String, publishTopic: String): Completable = Completable.fromCallable {
+        client.publishMessage(publishMessage, publishTopic)
+    }.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+
+    override fun observeConnection(): Observable<Boolean>
+            = clientObservable.filter { it is ClientEvents.Connected || it is ClientEvents.Disconnected }
+            .map { it is ClientEvents.Connected }
+            .retryWhen { t -> t.delay(MQTT_RECONNECT_TIMEOUT, TimeUnit.MILLISECONDS) }
+
 }

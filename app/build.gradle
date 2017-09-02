@@ -22,17 +22,20 @@ android {
 
 dependencies {
     implementation "com.github.mplacona:arduwrap:${arduWrapVersion}"
-    //noinspection GradleDynamicVersion
-    compileOnly 'com.google.android.things:androidthings:+'
-    compile "com.google.android.things.contrib:driver-rainbowhat:${driverRainbowHatVersion}"
-    compile project(':broker')
-    compile "org.eclipse.paho:org.eclipse.paho.client.mqttv3:${pahoVersion}"
+    provided 'com.google.android.things:androidthings:0.5-devpreview'
+    implementation "com.google.android.things.contrib:driver-rainbowhat:${driverRainbowHatVersion}"
+    implementation project(':broker')
+    implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:${pahoVersion}"
 
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
-    compile 'com.google.firebase:firebase-core:11.0.4'
-    compile 'com.google.firebase:firebase-database:11.0.4'
-    testCompile 'junit:junit:4.12'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    implementation "com.google.firebase:firebase-core:$firebaseVersion"
+    implementation "com.google.firebase:firebase-database:$firebaseVersion"
+    implementation "com.google.code.gson:gson:$gsonVersion"
+    implementation "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
+    implementation "io.reactivex.rxjava2:rxandroid:$rxAndroidVersion"
+    implementation "com.stepango.koptional:koptional:$koptionalVersion"
+    testImplementation 'junit:junit:4.12'
 }
 repositories {
     maven { url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1' }

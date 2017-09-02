@@ -1,7 +1,8 @@
-package com.github.nekdenis.weatherlogger
+package com.github.nekdenis.weatherlogger.main
 
 import android.app.Activity
 import android.os.Bundle
+import com.github.nekdenis.weatherlogger.R
 
 class MainActivity : Activity() {
 
@@ -11,7 +12,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         inject()
-        controller.start(this)
+        controller.onStart()
     }
 
     private fun inject() {
@@ -21,6 +22,6 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        controller.stop()
+        controller.onStop()
     }
 }

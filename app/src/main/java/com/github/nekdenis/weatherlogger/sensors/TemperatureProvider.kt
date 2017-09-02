@@ -1,21 +1,20 @@
 package com.github.nekdenis.weatherlogger.sensors
 
-import com.github.nekdenis.weatherlogger.utils.BoardDefaults
+import com.github.nekdenis.weatherlogger.core.iot.BoardDefaults
+import com.github.nekdenis.weatherlogger.core.system.LC
 import rocks.androidthings.arduwrap.Arduino
 import rocks.androidthings.arduwrap.Dht22Driver
 
-interface TemperatureProvider {
-    fun start()
-    fun stop()
+interface TemperatureProvider : LC {
     fun humidity(): Double?
     fun temperature(): Double?
 }
 
-class TemperatureProviderImpl : TemperatureProvider {
+class TemperatureProviderArduino : TemperatureProvider {
     val mArduino = Arduino.ArduinoBuilder().uartDeviceName(BoardDefaults.getUartName()).build()
     val dht22Driver = Dht22Driver(mArduino)
 
-    override fun start() {
+    override fun onStart() {
         dht22Driver.startup()
     }
 
@@ -24,7 +23,7 @@ class TemperatureProviderImpl : TemperatureProvider {
 
     private fun String.toDoubleOrNull() = if (isEmpty()) null else toDouble()
 
-    override fun stop() {
+    override fun onStop() {
         dht22Driver.shutdown()
     }
 }

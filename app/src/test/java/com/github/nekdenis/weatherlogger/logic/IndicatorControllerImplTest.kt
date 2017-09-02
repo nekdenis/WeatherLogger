@@ -4,6 +4,7 @@ import com.github.nekdenis.weatherlogger.db.DBProvider
 import com.github.nekdenis.weatherlogger.devices.Display
 import com.github.nekdenis.weatherlogger.devices.Leds
 import com.github.nekdenis.weatherlogger.model.WeatherModel
+import com.github.nekdenis.weatherlogger.test.TimeProviderTestImpl
 import org.junit.Assert
 import org.junit.Test
 

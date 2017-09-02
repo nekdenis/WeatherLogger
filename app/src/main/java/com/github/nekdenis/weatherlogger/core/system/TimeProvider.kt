@@ -1,4 +1,4 @@
-package com.github.nekdenis.weatherlogger.utils
+package com.github.nekdenis.weatherlogger.core.system
 
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -12,12 +12,14 @@ interface TimeProvider {
     fun dayFormatted(time: Long): String
     fun nowTimeFormatted(): String
     fun timeFormatted(time: Long): String
+    fun dateTimeFormatted(time: Long): String
     fun isNight(): Boolean
 }
 
 class TimeProviderImpl : TimeProvider {
     private val dayFormat = SimpleDateFormat("yyyy-MM-dd").apply { timeZone = timeZone() }
     private val timeFormat = SimpleDateFormat("HH:mm:ss").apply { timeZone = timeZone() }
+    private val dayTimeFormat = SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").apply { timeZone = timeZone() }
     private fun timeZone() = TimeZone.getTimeZone("GMT+8")
 
     override fun nowMillis(): Long = System.currentTimeMillis()
@@ -25,6 +27,7 @@ class TimeProviderImpl : TimeProvider {
     override fun dayFormatted(date: Long): String = dayFormat.format(Date(date))
     override fun nowTimeFormatted(): String = timeFormat.format(Date(nowMillis()))
     override fun timeFormatted(time: Long): String = timeFormat.format(Date(time))
+    override fun dateTimeFormatted(time: Long): String = dayTimeFormat.format(Date(time))
     override fun isNight(): Boolean = Calendar.getInstance().run {
         timeInMillis = nowMillis()
         val hour = get(Calendar.HOUR_OF_DAY)

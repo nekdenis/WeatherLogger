@@ -1,26 +1,26 @@
 package com.github.nekdenis.weatherlogger.logic
 
-import com.github.nekdenis.weatherlogger.db.DBProvider
+import com.github.nekdenis.weatherlogger.core.system.TimeProvider
 import com.github.nekdenis.weatherlogger.devices.Display
 import com.github.nekdenis.weatherlogger.devices.Leds
 import com.github.nekdenis.weatherlogger.model.WeatherModel
-import com.github.nekdenis.weatherlogger.utils.TimeProvider
 
 
 interface IndicatorController {
-    fun onNewReading(weather: WeatherModel)
+    fun onNewReading(weather: WeatherModel, boundaryTemperature: Double)
+    fun onSystemError()
+    fun onSystemErrorSolved()
+    fun onTemperatureError()
+    fun onTemperatureErrorSolved()
 }
 
 class IndicatorControllerImpl(
         private val display: Display,
         private val leds: Leds,
-        private val dbProvider: DBProvider,
         private val timeProvider: TimeProvider
 ) : IndicatorController {
 
-    override fun onNewReading(weather: WeatherModel) {
-        display.setBrightness(timeProvider.isNight())
-        display.updateDisplay(formatDisplayValue(weather.temperature))
+    init {
         leds.apply {
             turnOnBlue(false)
             turnOnGreen(false)
@@ -28,7 +28,27 @@ class IndicatorControllerImpl(
         }
     }
 
-    private fun formatDisplayValue(temperature: Double): Double =
-            (dbProvider.pullBoundaryTemperature().toInt() + temperature.toInt() * 100).toDouble()
+    override fun onNewReading(weather: WeatherModel, boundaryTemperature: Double) {
+        display.setBrightness(timeProvider.isNight())
+        display.updateDisplay(formatDisplayValue(weather.temperature, boundaryTemperature))
+    }
 
+    private fun formatDisplayValue(temperature: Double, boundaryTemperature: Double): Double =
+            (boundaryTemperature.toInt() + temperature.toInt() * 100).toDouble()
+
+    override fun onSystemError() {
+        leds.turnOnRed(true)
+    }
+
+    override fun onSystemErrorSolved() {
+        leds.turnOnRed(false)
+    }
+
+    override fun onTemperatureError() {
+        leds.turnOnGreen(true)
+    }
+
+    override fun onTemperatureErrorSolved() {
+        leds.turnOnGreen(false)
+    }
 }

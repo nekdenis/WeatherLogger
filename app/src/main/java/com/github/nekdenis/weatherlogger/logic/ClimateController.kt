@@ -2,26 +2,24 @@ package com.github.nekdenis.weatherlogger.logic
 
 import com.github.nekdenis.weatherlogger.REFRESH_SENSORS_INTERVAL
 import com.github.nekdenis.weatherlogger.TIME_INTERVAL_FOR_AVERAGE_VALUE
-import com.github.nekdenis.weatherlogger.db.DBProvider
+import com.github.nekdenis.weatherlogger.core.rx.CompositeDisposableHolder
+import com.github.nekdenis.weatherlogger.core.system.LCRX
+import com.github.nekdenis.weatherlogger.db.ConditionerConfigRepo
+import com.github.nekdenis.weatherlogger.devices.AirConditioner
 import com.github.nekdenis.weatherlogger.model.WeatherModel
+import com.github.nekdenis.weatherlogger.sensors.WeatherProvider
 
 
-interface ClimateController {
-
-    fun onNewReading(weather: WeatherModel)
-    fun setCallback(climateControllerCallback: ClimateControllerCallback)
-    fun removeCallback()
+interface ClimateController : LCRX {
 }
-
-interface ClimateControllerCallback {
-    fun turnOnConditioner()
-    fun turnOffConditioner()
-}
-
 
 class ClimateControllerImpl(
-        val dbProvider: DBProvider
-) : ClimateController {
+        val weatherProvider: WeatherProvider,
+        val conditionerConfigRepo: ConditionerConfigRepo,
+        val airConditioner: AirConditioner,
+        val compositeDisposableHolder: CompositeDisposableHolder
+) : ClimateController, CompositeDisposableHolder by compositeDisposableHolder {
+
     private val UNDEFINED = Double.MIN_VALUE
     private val queueSize: Int = (TIME_INTERVAL_FOR_AVERAGE_VALUE / REFRESH_SENSORS_INTERVAL).toInt()
 
@@ -30,25 +28,21 @@ class ClimateControllerImpl(
     private var mediumTemp: Double = UNDEFINED
         get() = if (lastReadings.size == queueSize) mediumTemp(lastReadings) else UNDEFINED
 
-    private var callback: ClimateControllerCallback? = null
-
-    override fun setCallback(climateControllerCallback: ClimateControllerCallback) {
-        callback = climateControllerCallback
+    override fun onStart() {
+        conditionerConfigRepo.observeOrDefault()
+                .switchMap { config ->
+                    weatherProvider.observeWeather()
+                            .doOnNext { lastReadings.add(it) }
+                            .doOnNext { makeDecision(mediumTemp, config.boundaryTemp) }
+                }
+                .subscribe()
+                .bind()
     }
 
-    override fun removeCallback() {
-        callback = null
-    }
-
-    override fun onNewReading(weather: WeatherModel) {
-        lastReadings.add(weather)
-        callback?.let { makeDecision(mediumTemp, it) }
-    }
-
-    private fun makeDecision(temp: Double, callback: ClimateControllerCallback) {
+    private fun makeDecision(temp: Double, boundaryTemp: Double) {
         if (temp == UNDEFINED) return
-        if (temp < dbProvider.pullBoundaryTemperature()) callback.turnOffConditioner()
-        else callback.turnOnConditioner()
+        if (temp < boundaryTemp) airConditioner.turnOffConditioner().subscribe().bind()
+        else airConditioner.turnOnConditioner().subscribe().bind()
     }
 
     private fun mediumTemp(temps: Collection<WeatherModel>) = temps.run {
