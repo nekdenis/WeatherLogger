@@ -14,9 +14,11 @@ interface CompositeDisposableHolder {
             composite = CompositeDisposable()
         }
     }
+
 }
 
 class CompositeDisposableHolderImpl : CompositeDisposableHolder {
+
     override var composite = CompositeDisposable()
 
     override fun Disposable.bind() {

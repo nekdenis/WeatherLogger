@@ -3,7 +3,7 @@ package com.github.nekdenis.weatherlogger.test
 import com.github.nekdenis.weatherlogger.core.system.TimeProvider
 
 
-class TimeProviderTestImpl: TimeProvider {
+class TimeProviderTestImpl(val isNightMode: Boolean = false) : TimeProvider {
     override fun dateTimeFormatted(time: Long): String {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -28,8 +28,6 @@ class TimeProviderTestImpl: TimeProvider {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun isNight(): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun isNight(): Boolean = isNightMode
 
 }

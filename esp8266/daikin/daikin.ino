@@ -9,7 +9,7 @@ const int mqtt_port = 1883;
 const char* mqtt_user = "testuser";
 const char* mqtt_pass = "passwd";
 
-const int sleepTimeS = 60*10;
+const int sleepTimeS = 60*2;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -59,8 +59,6 @@ void setup_wifi() {
     Serial.print(".");
   }
 
-  randomSeed(micros());
-
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
@@ -79,17 +77,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println();
 
   if ((char)payload[0] == '1') {
-//    digitalWrite(BUILTIN_LED, LOW);
-    if(value!=1){
-      turnOnDaikin();
-    }
-    value = 1;
+    digitalWrite(BUILTIN_LED, LOW);
+    turnOnDaikin();
+    goSleep();
   } else {
-//    digitalWrite(BUILTIN_LED, HIGH);
-    if(value!=0){
-      turnOffDaikin();
-    }
-    value = 0;
+    digitalWrite(BUILTIN_LED, HIGH);
+    turnOffDaikin();
+    goSleep();
   }
 
 }
@@ -101,18 +95,20 @@ void reconnect() {
 
     if (client.connect("kitchenDaikin", mqtt_user, mqtt_pass)) {
       Serial.println("connected");
-
-      client.publish("kitchen_response", "hello world");
-
-      client.subscribe("kitchen_control");
+      client.publish("kitchen/response", "hello world");
+      client.subscribe("kitchen/control");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
-
       delay(5000);
     }
   }
+}
+
+void goSleep() {
+    //Serial.println("ESP8266 in sleep mode");
+    //ESP.deepSleep(sleepTimeS * 1000000);
 }
 
 void setup() {
@@ -123,7 +119,7 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
-  digitalWrite(BUILTIN_LED, HIGH);
+  client.publish("kitchen/response", "I'm alive");
 }
 
 void loop() {
@@ -131,8 +127,6 @@ void loop() {
     reconnect();
   }else{
     client.loop();
-    client.publish("kitchen_response", "I'm alive");
-    Serial.println("ESP8266 in sleep mode");
-    ESP.deepSleep(sleepTimeS * 1000000);
   }
 }
+

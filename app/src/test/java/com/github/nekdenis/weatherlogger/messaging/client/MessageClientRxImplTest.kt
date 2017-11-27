@@ -1,48 +1,121 @@
 package com.github.nekdenis.weatherlogger.messaging.client
 
-import io.reactivex.Observable
+import com.github.nekdenis.weatherlogger.test.CompositeDisposableHolderTestImpl
+import com.github.nekdenis.weatherlogger.test.RxSchedulersOverrideRule
 import org.junit.Assert
+import org.junit.Rule
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
 
 class MessageClientRxImplTest {
-    var v = 0
 
-    @Test
-    fun onStart() {
+    @Rule @JvmField val rxRule = RxSchedulersOverrideRule()
 
-        val s = Observable.create<Int> { emitter ->
-            emitter.onNext(++v)
-        }
-        s.publish().connect()
-        Assert.assertEquals(1, v)
+    var connected: Boolean? = null
+    var serverURL: String? = null
+    var clientName: String? = null
+    var subscribed: String? = null
+    var lastMessage: String? = null
+    var lastTopic: String? = null
+    var connectionCount = 0
+    var disconnected: Boolean? = null
+
+    var messenger: ((topic: String, message: String) -> Unit)? = null
+    var errorProcessor: ((e: Throwable) -> Unit)? = null
+
+    val client = MessageClientRxImpl(
+            object : MqttClient {
+                override fun connect(serverUrl: String, clientName: String, onConnected: () -> Unit, onMessage: (topic: String, message: String) -> Unit, onError: (e: Throwable) -> Unit) {
+                    this@MessageClientRxImplTest.clientName = clientName
+                    this@MessageClientRxImplTest.serverURL = serverUrl
+                    this@MessageClientRxImplTest.connected = true
+                    this@MessageClientRxImplTest.messenger = onMessage
+                    this@MessageClientRxImplTest.errorProcessor = onError
+                    connectionCount++
+                    onConnected()
+                }
+
+                override fun subscribeToTopic(subscriptionTopic: String, messageListener: MessageListener) {
+                    subscribed = subscriptionTopic
+                }
+
+                override fun subscribeToTopic(subscriptionTopic: String) {
+                    subscribed = subscriptionTopic
+                }
+
+                override fun publishMessage(publishMessage: String, publishTopic: String) {
+                    lastMessage = publishMessage
+                    lastTopic = publishTopic
+                }
+
+                override fun disconnect() {
+                    disconnected = true
+                }
+
+            },
+            CompositeDisposableHolderTestImpl()
+    )
+
+    private fun initClient() {
+        client.configClient("SERVER", "CLIENT", retryOnError = false)
+        client.onStart()
     }
 
     @Test
-    fun testRetry() {
-
-//        Observable.create<Int> { s ->
-//            println("subscribing")
-//            s.onError(RuntimeException("always fails"))
-//        }.retryWhen({ attempts ->
-//            attempts.zipWith(Observable.range(1, 10), BiFunction<Throwable, Int, Int> { t1, t2 -> t2 })
-//                    .flatMap({ i ->
-//                        println("delay retry by $i second(s)")
-//                        Observable.timer(i.toLong(), TimeUnit.SECONDS)
-//                    })
-//        }).blockingForEach { System.out.println() }
-
-                var int = 0
-
-                Observable.fromCallable {
-                    int += 1
-                    int
-                }.doOnNext { System.out.println(it) }
-                        .doOnNext { if (it < 4) throw Exception("aaa") }
-                        .retryWhen { t -> t.delay (1000, TimeUnit.MILLISECONDS) }
-                        .blockingForEach { System.out.println() }
-
+    fun shouldConnect() {
+        initClient()
+        Assert.assertEquals(true, connected)
+        Assert.assertEquals("SERVER", serverURL)
+        Assert.assertEquals("CLIENT", clientName)
     }
 
+    @Test
+    fun shouldSubscribeOnce() {
+        initClient()
+        client.publishMessage("", "").test()
+        client.publishMessage("", "").test()
+        client.subscribeToTopic("").test()
+        client.subscribeToTopic("").test()
+        Assert.assertEquals(1, connectionCount)
+    }
+
+    @Test
+    fun shouldSubscribe() {
+        initClient()
+        client.subscribeToTopic("aaa").test()
+        Assert.assertEquals("aaa", subscribed)
+    }
+
+
+    @Test
+    fun shouldReceiveMessage() {
+        initClient()
+        val testObserver = client.subscribeToTopic("aaa").test()
+        messenger!!("any", "mess")
+        testObserver.assertValue { it == "mess" }
+    }
+
+    @Test
+    fun shouldPublishMessage() {
+        initClient()
+        val testObserver = client.publishMessage("hey!", "bb").test()
+        Assert.assertEquals("hey!", lastMessage)
+        Assert.assertEquals("bb", lastTopic)
+    }
+
+    @Test
+    fun shouldObserveErrorConnection() {
+        initClient()
+        val testObserver = client.observeConnection().test()
+        errorProcessor!!(Exception("aa"))
+        testObserver.assertError { it.message == "aa" }
+        Assert.assertTrue(disconnected!!)
+    }
+
+    @Test
+    fun shouldObserveSuccessfulConnection() {
+        initClient()
+        val testObserver = client.observeConnection().test()
+        testObserver.assertValue { it == true }
+    }
 }

@@ -10,7 +10,7 @@ import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 interface MessageClient : LCRX {
-    fun configClient(serverUrl: String, clientName: String)
+    fun configClient(serverUrl: String, clientName: String, retryOnError: Boolean = true)
     fun observeConnection(): Observable<Boolean>
     fun subscribeToTopic(subscriptionTopic: String): Observable<String>
     fun publishMessage(publishMessage: String, publishTopic: String): Completable
@@ -30,6 +30,7 @@ class MessageClientRxImpl(
 ) : MessageClient, CompositeDisposableHolder by compositeDisposableHolder {
     lateinit var serverUrl: String
     lateinit var clientName: String
+    var retryOnError: Boolean = true
 
     private val clientObservable = Observable.create<ClientEvents> { emitter ->
 
@@ -41,11 +42,12 @@ class MessageClientRxImpl(
             client.disconnect()
         }
         client.connect(serverUrl, clientName, onConnected, onMessage, onErrorConnection)
-    }.share()
+    }.share().doOnSubscribe {  }
 
-    override fun configClient(serverUrl: String, clientName: String) {
+    override fun configClient(serverUrl: String, clientName: String, retryOnError: Boolean) {
         this.serverUrl = serverUrl
         this.clientName = clientName
+        this.retryOnError = retryOnError
     }
 
     override fun onStart() {
@@ -73,6 +75,7 @@ class MessageClientRxImpl(
     override fun observeConnection(): Observable<Boolean>
             = clientObservable.filter { it is ClientEvents.Connected || it is ClientEvents.Disconnected }
             .map { it is ClientEvents.Connected }
-            .retryWhen { t -> t.delay(MQTT_RECONNECT_TIMEOUT, TimeUnit.MILLISECONDS) }
-
+            .apply {
+                if (retryOnError) retryWhen { t -> t.delay(MQTT_RECONNECT_TIMEOUT, TimeUnit.MILLISECONDS) }
+            }
 }

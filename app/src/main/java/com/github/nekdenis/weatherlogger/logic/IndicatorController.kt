@@ -26,7 +26,7 @@ class IndicatorControllerImpl(
 
     init {
         leds.apply {
-            turnOnBlue(false)
+            turnOnRed(false)
             turnOnGreen(false)
             turnOnBlue(false)
         }
