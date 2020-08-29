@@ -18,5 +18,5 @@ class DeviceInfoImpl(val contentResolver: ContentResolver) : DeviceInfo {
 
     override fun deviceName(): String = "${android.os.Build.BRAND} ${android.os.Build.MODEL}"
 
-    override fun buildFlavor(): String = BuildConfig.FLAVOR
+    override fun buildFlavor(): String = BuildConfig.BUILD_TYPE
 }

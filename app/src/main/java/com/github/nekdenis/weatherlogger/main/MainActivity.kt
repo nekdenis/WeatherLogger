@@ -3,6 +3,7 @@ package com.github.nekdenis.weatherlogger.main
 import android.app.Activity
 import android.os.Bundle
 import com.github.nekdenis.weatherlogger.R
+import com.github.nekdenis.weatherlogger.utils.airController
 
 class MainActivity : Activity() {
 
@@ -16,7 +17,7 @@ class MainActivity : Activity() {
     }
 
     private fun inject() {
-        controller = com.github.nekdenis.weatherlogger.utils.mainController()
+        controller = airController()
     }
 
 

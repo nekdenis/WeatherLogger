@@ -1,20 +1,17 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.1.4'
+    ext.kotlin_version = '1.4.0'
     ext.build = '1.1.4'
 
     repositories {
         google()
         jcenter()
-        maven {
-            url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1'
-        }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.0-beta3'
+        classpath 'com.android.tools.build:gradle:4.1.0-rc01'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.google.gms:google-services:3.1.0'
+        classpath 'com.google.gms:google-services:4.3.3'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -25,16 +22,17 @@ ext {
     appId = "com.github.nekdenis.weatherlogger"
     appVersionCode = 1
     appBuildToolsVersion = "26.0.1"
-    appSdkVersion = 24
-    appMinSdkVersion = 24
+    appSdkVersion = 27
+    appMinSdkVersion = 27
 
+    retrofitVersion = "2.9.0"
     pahoVersion = "1.1.0"
     pahoAndroidVersion = "1.1.1"
     firebaseVersion = "11.2.0"
-    gsonVersion = "2.8.1"
+    gsonVersion = "2.8.5"
     arduWrapVersion = "v0.21"
-    driverRainbowHatVersion = "0.4"
-    rxJavaVersion = "2.1.1"
+    driverRainbowHatVersion = "1.0"
+    rxJavaVersion = "2.2.19"
     rxAndroidVersion = "2.0.1"
     koptionalVersion = "1.2.0"
 }

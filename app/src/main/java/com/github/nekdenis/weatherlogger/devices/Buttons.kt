@@ -9,6 +9,7 @@ interface Buttons {
 
     fun setButtonAListener(listener: () -> Unit)
     fun setButtonBListener(listener: () -> Unit)
+    fun setButtonCListener(listener: () -> Unit)
     fun stop()
 }
 
@@ -19,8 +20,10 @@ class ButtonsImpl(
 ) : Buttons {
     private val buttonA: Button = RainbowHat.openButtonA()
     private val buttonB: Button = RainbowHat.openButtonB()
+    private val buttonC: Button = RainbowHat.openButtonC()
     private var buttonAListener: (() -> Unit)? = null
     private var buttonBListener: (() -> Unit)? = null
+    private var buttonCListener: (() -> Unit)? = null
 
     init {
         buttonA.setOnButtonEventListener { _: Button, pressed: Boolean ->
@@ -30,6 +33,10 @@ class ButtonsImpl(
         buttonB.setOnButtonEventListener { _: Button, pressed: Boolean ->
             log.d("$TAG button B pressed:" + pressed)
             if (pressed) buttonBListener?.invoke()
+        }
+        buttonC.setOnButtonEventListener { _: Button, pressed: Boolean ->
+            log.d("$TAG button C pressed:" + pressed)
+            if (pressed) buttonCListener?.invoke()
         }
     }
 
@@ -41,8 +48,13 @@ class ButtonsImpl(
         buttonBListener = listener
     }
 
+    override fun setButtonCListener(listener: () -> Unit) {
+        buttonCListener = listener
+    }
+
     override fun stop() {
         buttonA.close()
         buttonB.close()
+        buttonC.close()
     }
 }

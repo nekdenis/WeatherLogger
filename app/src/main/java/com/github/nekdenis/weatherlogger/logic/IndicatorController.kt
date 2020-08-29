@@ -3,11 +3,7 @@ package com.github.nekdenis.weatherlogger.logic
 import com.github.nekdenis.weatherlogger.core.system.TimeProvider
 import com.github.nekdenis.weatherlogger.devices.Display
 import com.github.nekdenis.weatherlogger.devices.Leds
-import com.github.nekdenis.weatherlogger.model.CONFIG_MODE_AUTO
-import com.github.nekdenis.weatherlogger.model.CONFIG_MODE_OFF
-import com.github.nekdenis.weatherlogger.model.CONFIG_MODE_ON
-import com.github.nekdenis.weatherlogger.model.ConditionerConfig
-import com.github.nekdenis.weatherlogger.model.WeatherModel
+import com.github.nekdenis.weatherlogger.model.*
 
 
 interface IndicatorController {
@@ -16,6 +12,7 @@ interface IndicatorController {
     fun onSystemErrorSolved()
     fun onTemperatureError()
     fun onTemperatureErrorSolved()
+    fun onNewReadingWithAqi(weather: WeatherModel, weatherDataType: WEATHER_DATA)
 }
 
 class IndicatorControllerImpl(
@@ -36,8 +33,26 @@ class IndicatorControllerImpl(
         display.setBrightness(timeProvider.isNight())
         when (config.mode) {
             CONFIG_MODE_AUTO -> updateDisplay(weather.temperature, config.boundaryTemp)
-            CONFIG_MODE_ON   -> updateDisplay(weather.temperature, 01.0)
-            CONFIG_MODE_OFF  -> updateDisplay(weather.temperature, 00.0)
+            CONFIG_MODE_ON -> updateDisplay(weather.temperature, 01.0)
+            CONFIG_MODE_OFF -> updateDisplay(weather.temperature, 00.0)
+        }
+    }
+
+    override fun onNewReadingWithAqi(weather: WeatherModel, weatherDataType: WEATHER_DATA) {
+        display.setBrightness(timeProvider.isNight())
+        when (weatherDataType) {
+            WEATHER_DATA.TEMPERATURE -> {
+                display.updateDisplay(weather.temperature)
+                display.setRating(0)
+            }
+            WEATHER_DATA.HUMIDITY -> {
+                display.updateDisplay(weather.humidity)
+                display.setRating(0)
+            }
+            WEATHER_DATA.AQI -> {
+                display.updateDisplay(weather.airQualityIndex.value)
+                display.setRating(weather.airQualityIndex.rating)
+            }
         }
     }
 

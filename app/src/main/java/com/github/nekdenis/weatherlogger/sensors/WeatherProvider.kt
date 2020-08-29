@@ -6,6 +6,7 @@ import com.github.nekdenis.weatherlogger.core.system.TimeProvider
 import com.github.nekdenis.weatherlogger.db.WeatherModelRepo
 import com.github.nekdenis.weatherlogger.logic.Watchdog
 import com.github.nekdenis.weatherlogger.messaging.client.MessageClient
+import com.github.nekdenis.weatherlogger.model.RatedDouble
 import com.github.nekdenis.weatherlogger.model.WeatherModel
 import io.reactivex.Observable
 
@@ -16,6 +17,7 @@ interface WeatherProvider {
 
 const val UNKNOWN_TEMPERATURE = -1000.0
 const val UNKNOWN_HUMIDITY = -1000.0
+val UNKNOWN_AIR_QUALITY = RatedDouble(-1000.0, 0)
 
 private const val TAG = "WEATHER_REPO::"
 
