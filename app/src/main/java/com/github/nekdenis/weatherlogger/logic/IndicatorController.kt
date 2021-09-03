@@ -16,9 +16,9 @@ interface IndicatorController {
 }
 
 class IndicatorControllerImpl(
-        private val display: Display,
-        private val leds: Leds,
-        private val timeProvider: TimeProvider
+    private val display: Display,
+    private val leds: Leds,
+    private val timeProvider: TimeProvider
 ) : IndicatorController {
 
     init {
@@ -42,15 +42,15 @@ class IndicatorControllerImpl(
         display.setBrightness(timeProvider.isNight())
         when (weatherDataType) {
             WEATHER_DATA.TEMPERATURE -> {
-                display.updateDisplay(weather.temperature)
+                display.updateDisplay("T${weather.temperature.firstNDigits(3)}")
                 display.setRating(0)
             }
             WEATHER_DATA.HUMIDITY -> {
-                display.updateDisplay(weather.humidity)
+                display.updateDisplay("H${weather.humidity.firstNDigits(3)}")
                 display.setRating(0)
             }
             WEATHER_DATA.AQI -> {
-                display.updateDisplay(weather.airQualityIndex.value)
+                display.updateDisplay("A${weather.airQualityIndex.value.firstNDigits(3)}")
                 display.setRating(weather.airQualityIndex.rating)
             }
         }
@@ -61,7 +61,7 @@ class IndicatorControllerImpl(
     }
 
     private fun formatDisplayValue(temperature: Double, boundaryTemperature: Double): Double =
-            (boundaryTemperature.toInt() + temperature.toInt() * 100).toDouble()
+        (boundaryTemperature.toInt() + temperature.toInt() * 100).toDouble()
 
     override fun onSystemError() {
         leds.turnOnRed(true)
@@ -77,5 +77,14 @@ class IndicatorControllerImpl(
 
     override fun onTemperatureErrorSolved() {
         leds.turnOnGreen(false)
+    }
+}
+
+private fun Double.firstNDigits(n: Int): String {
+    val str = this.toString()
+    return if (str.length > n) {
+        str.substring(0, n)
+    } else {
+        str
     }
 }

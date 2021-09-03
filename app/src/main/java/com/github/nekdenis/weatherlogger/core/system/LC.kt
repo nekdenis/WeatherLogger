@@ -1,6 +1,6 @@
 package com.github.nekdenis.weatherlogger.core.system
 
-import android.support.annotation.CallSuper
+import androidx.annotation.CallSuper
 import com.github.nekdenis.weatherlogger.core.rx.CompositeDisposableHolder
 
 

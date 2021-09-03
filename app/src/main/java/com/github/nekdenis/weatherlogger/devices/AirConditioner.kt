@@ -1,6 +1,6 @@
 package com.github.nekdenis.weatherlogger.devices
 
-import android.support.annotation.CheckResult
+import androidx.annotation.CheckResult
 import com.github.nekdenis.weatherlogger.MQTT_AIR_CONDITIONER_CONTROL_TOPIC
 import com.github.nekdenis.weatherlogger.MQTT_AIR_CONDITIONER_RESPONSE_TOPIC
 import com.github.nekdenis.weatherlogger.MQTT_COMMAND_TURN_OFF

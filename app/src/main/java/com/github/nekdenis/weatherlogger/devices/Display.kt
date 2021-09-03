@@ -11,6 +11,7 @@ import java.io.IOException
 
 interface Display {
     fun updateDisplay(value: Double)
+    fun updateDisplay(value: String)
     fun stop()
     fun setBrightness(isNight: Boolean)
     fun setRating(value: Int)
@@ -55,6 +56,14 @@ class DisplayImpl(val log: Logger) : Display {
     }
 
     override fun updateDisplay(value: Double) {
+        try {
+            display.display(value)
+        } catch (e: IOException) {
+            log.e(e, "$TAG Error setting display")
+        }
+    }
+
+    override fun updateDisplay(value: String) {
         try {
             display.display(value)
         } catch (e: IOException) {

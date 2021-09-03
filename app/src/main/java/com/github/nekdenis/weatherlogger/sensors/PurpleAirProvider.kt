@@ -103,6 +103,6 @@ private data class Sensor(
 )
 
 private interface PurpleAirApi {
-    @GET("/json?show=18471")
+    @GET("/json?show=10000")
     fun getSensorData(): Single<PurpleAirSensorResponse>
 }
